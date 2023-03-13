@@ -55,13 +55,17 @@ AKK_KartPawn::AKK_KartPawn()
 void AKK_KartPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// Unreal Units are cm, we need metres so divide by 100.
+	NormalForce = -GetWorld()->GetGravityZ() / 100.f;
+
 }
 
 void AKK_KartPawn::CalculateNewVelocity(float DeltaTime)
 {
 	FVector Force = GetActorForwardVector() * (DrivingForceMultiplier * VehicleMass) * Throttle;
-	Force += GetResistance();
+	Force += GetAirResistance();
+	Force += GetRollingResistance();
 	
 	const FVector Acceleration = Force / VehicleMass;
 	
@@ -85,8 +89,9 @@ void AKK_KartPawn::UpdateLocationFromVelocity(float DeltaTime)
 
 void AKK_KartPawn::UpdateVehicleRotation(float DeltaTime)
 {
-	const float RotationAngle = MaxSteeringDegreesPerSecond * Steering * DeltaTime;
-	const FQuat RotationDelta(GetActorUpVector(), FMath::DegreesToRadians(RotationAngle));
+	const float DeltaRotation = FVector::DotProduct(GetActorForwardVector(), Velocity) * DeltaTime;
+	const float RotationAngle = (DeltaRotation / MinimumTurningRadius) * Steering;
+	const FQuat RotationDelta(GetActorUpVector(), RotationAngle);
 	Velocity = RotationDelta.RotateVector(Velocity);
 	
 	AddActorWorldRotation(RotationDelta);
@@ -101,6 +106,9 @@ void AKK_KartPawn::Tick(float DeltaTime)
 	
 	CalculateNewVelocity(DeltaTime);
 	UpdateLocationFromVelocity(DeltaTime);
+
+	
+	GEngine->AddOnScreenDebugMessage(0, 0.f, FColor::Green, *Velocity.ToString());
 }
 
 // Called to bind functionality to input
@@ -125,7 +133,12 @@ void AKK_KartPawn::MoveRight(float Val)
 	Steering = Val;
 }
 
-FVector AKK_KartPawn::GetResistance() const
+FVector AKK_KartPawn::GetAirResistance() const
 {
 	return - Velocity.GetSafeNormal() * Velocity.SizeSquared() * DragCoefficient ;
+}
+
+FVector AKK_KartPawn::GetRollingResistance() const
+{
+	return - Velocity.GetSafeNormal() * RollingCoefficient * NormalForce; 
 }

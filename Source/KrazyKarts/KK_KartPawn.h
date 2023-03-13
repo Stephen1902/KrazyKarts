@@ -35,20 +35,26 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float VehicleMass = 1000.f;
 
+	// Minimum radius of the car turning at full lock in metres.
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
-	float MaxSteeringDegreesPerSecond = 90.f;
+	float MinimumTurningRadius = 10.f;
 
-	// Higher means more drag
+	// Air resistance.  Higher means more drag.
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float DragCoefficient = 16.f;
+
+	// Resistance of the tyres on the road.  Higher means more drag.
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	float RollingCoefficient = 0.0150f;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	void CalculateNewVelocity(float DeltaTime);
 	void UpdateLocationFromVelocity(float DeltaTime);
 	void UpdateVehicleRotation(float DeltaTime);
-	FVector GetResistance() const;
-
+	FVector GetAirResistance() const;
+	FVector GetRollingResistance() const;
+	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -67,6 +73,9 @@ private:
 
 	// Steering being applied by the player
 	float Steering;
+
+	// World Gravity, used to calculate normal force for rolling resistance
+	float NormalForce;
 };
 
 
