@@ -46,6 +46,12 @@ public:
 	// Resistance of the tyres on the road.  Higher means more drag.
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float RollingCoefficient = 0.0150f;
+	
+	UPROPERTY(ReplicatedUsing = "OnRep_Transform")
+	FTransform ReplicatedTransform;
+
+	UFUNCTION()
+	void OnRep_Transform();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -65,9 +71,18 @@ public:
 private:
 	void MoveForward(float Val);
 	void MoveRight(float Val);
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_MoveForward(float Val);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_MoveRight(float Val);
+
+	/** Marks the properties we wish to replicate */
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	FVector Velocity = FVector(0.f);
-
+	
 	// Throttle being applied by the player
 	float Throttle;
 
@@ -76,6 +91,14 @@ private:
 
 	// World Gravity, used to calculate normal force for rolling resistance
 	float NormalForce;
+
+	void GetAxisScales();
+	float MaxForwardAxisScale;
+	float MaxBackwardAxisScale;
+	float MaxLeftAxisScale;
+	float MaxRightAxisScale;
+
+	static FString GetRoleAsText(ENetRole RoleIn);
 };
 
 
